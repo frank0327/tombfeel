@@ -1,0 +1,2199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovaSpace — Personal Social Spaces</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: rgba(30, 41, 59, 0.85);
+      --bg-glass: rgba(15, 23, 42, 0.75);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #6366f1;
+      --accent-2: #ec4899;
+      --accent-soft: rgba(99, 102, 241, 0.16);
+      --border: rgba(148, 163, 184, 0.18);
+      --shadow: 0 20px 45px -15px rgba(2, 6, 23, 0.65);
+      --radius: 18px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    [data-mode="light"] {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #e2e8f0;
+      --bg-card: rgba(255, 255, 255, 0.9);
+      --bg-glass: rgba(255, 255, 255, 0.82);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --border: rgba(15, 23, 42, 0.12);
+      --shadow: 0 18px 40px -15px rgba(15, 23, 42, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.55;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Ambient Background Patterns */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      transition: opacity 0.4s ease, background 0.4s ease;
+      background:
+        radial-gradient(circle at 12% 18%, var(--accent-soft), transparent 38%),
+        radial-gradient(circle at 88% 82%, rgba(236, 72, 153, 0.13), transparent 40%);
+    }
+
+    body[data-bg-style="grid"]::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, var(--border) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(circle at center, black 45%, transparent 95%);
+      opacity: 0.45;
+    }
+
+    body[data-bg-style="dots"]::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background-image: radial-gradient(var(--border) 1.5px, transparent 1.5px);
+      background-size: 24px 24px;
+      opacity: 0.7;
+    }
+
+    body[data-bg-style="mesh"]::before {
+      background:
+        radial-gradient(at 0% 0%, var(--accent-soft) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.22) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, var(--accent-soft) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(56, 189, 248, 0.16) 0px, transparent 50%);
+    }
+
+    /* Top Navbar */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(16px);
+      background: var(--bg-glass);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1.5rem;
+    }
+
+    .navbar-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.03em;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 1.2rem;
+      box-shadow: 0 8px 20px -4px var(--accent-soft);
+    }
+
+    .brand span {
+      background: linear-gradient(135deg, var(--text-primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .account-switcher {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+    }
+
+    .account-switcher select {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .account-switcher select option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.55rem 1.05rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      box-shadow: 0 8px 22px -6px var(--accent);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border-color: transparent;
+    }
+
+    .btn-ghost:hover {
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.14);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-sm {
+      padding: 0.38rem 0.75rem;
+      font-size: 0.8rem;
+      border-radius: 10px;
+    }
+
+    /* Container & Layout */
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    /* Guest Welcome CTA Banner */
+    .hero-cta {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(236, 72, 153, 0.16));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-cta-text h1 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-cta-text p {
+      color: var(--text-secondary);
+      font-size: 0.96rem;
+      max-width: 620px;
+    }
+
+    .hero-cta-buttons {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Directory Bar (Spaces Explorer) */
+    .spaces-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1.5rem;
+      scrollbar-width: thin;
+    }
+
+    .spaces-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      margin-right: 0.25rem;
+    }
+
+    .space-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .space-pill:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .space-pill.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    .space-pill-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 0.95rem;
+      background: var(--bg-secondary);
+    }
+
+    .space-pill-info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+    }
+
+    .space-pill-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .space-pill-handle {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+    }
+
+    .badge-you {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 99px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      margin-left: 0.2rem;
+    }
+
+    /* Profile Header & Banner */
+    .profile-header-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.75rem;
+      backdrop-filter: blur(12px);
+    }
+
+    .profile-banner {
+      height: 190px;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+      transition: background 0.4s ease;
+    }
+
+    .profile-banner-actions {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .profile-header-body {
+      padding: 0 2rem 1.75rem;
+      position: relative;
+    }
+
+    .profile-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: -54px;
+      margin-bottom: 1rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .profile-avatar-wrap {
+      display: flex;
+      align-items: flex-end;
+      gap: 1.15rem;
+    }
+
+    .profile-avatar {
+      width: 108px;
+      height: 108px;
+      border-radius: 26px;
+      background: var(--bg-secondary);
+      border: 4px solid var(--bg-primary);
+      display: grid;
+      place-items: center;
+      font-size: 3.25rem;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      position: relative;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      margin-bottom: 0.35rem;
+    }
+
+    .profile-identity h2 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .profile-handle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .profile-bio {
+      margin-top: 0.75rem;
+      font-size: 1rem;
+      max-width: 760px;
+      white-space: pre-line;
+    }
+
+    .profile-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      margin-top: 1rem;
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+    }
+
+    .profile-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .profile-stats {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1.25rem;
+      padding-top: 1.1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+    }
+
+    .stat-value {
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+    }
+
+    .stat-label {
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+    }
+
+    /* Main Workspace Grid */
+    .space-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 1.75rem;
+      align-items: start;
+    }
+
+    @media (max-width: 920px) {
+      .space-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.4rem;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      margin-bottom: 1.4rem;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    /* Theme Customizer Controls */
+    .customizer-group {
+      margin-bottom: 1.15rem;
+    }
+
+    .customizer-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .customizer-label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      margin-bottom: 0.55rem;
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    .palette-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.6rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .palette-btn.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+
+    .swatch-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .segmented-control {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+      gap: 0.4rem;
+      background: var(--bg-secondary);
+      padding: 0.3rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .segment-btn {
+      padding: 0.4rem 0.5rem;
+      border-radius: 9px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .segment-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Post Composer */
+    .composer-card {
+      border-left: 4px solid var(--accent);
+    }
+
+    .composer-top {
+      display: flex;
+      gap: 0.9rem;
+    }
+
+    .composer-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: var(--bg-secondary);
+      display: grid;
+      place-items: center;
+      font-size: 1.45rem;
+      flex-shrink: 0;
+    }
+
+    .composer-inputs {
+      flex: 1;
+    }
+
+    textarea, input[type="text"], input[type="password"] {
+      width: 100%;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 0.95rem;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    textarea:focus, input[type="text"]:focus, input[type="password"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 92px;
+    }
+
+    .composer-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 0.85rem;
+    }
+
+    .composer-options {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .mood-select {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.45rem 0.7rem;
+      border-radius: 10px;
+      font-size: 0.84rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .tag-input-small {
+      width: 170px !important;
+      padding: 0.45rem 0.75rem !important;
+      font-size: 0.84rem !important;
+      border-radius: 10px !important;
+    }
+
+    /* Post Feed & Layout Modes */
+    .feed-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .feed-filter-pills {
+      display: flex;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .filter-pill.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .posts-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .posts-container.layout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1.15rem;
+    }
+
+    .posts-container.layout-compact .post-card {
+      padding: 1rem 1.2rem;
+    }
+
+    .post-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.35rem;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .post-card:hover {
+      border-color: rgba(148, 163, 184, 0.35);
+    }
+
+    .post-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .post-author {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .post-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      background: var(--bg-secondary);
+      display: grid;
+      place-items: center;
+      font-size: 1.35rem;
+    }
+
+    .post-author-meta h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .post-time {
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+    }
+
+    .post-mood {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .post-content {
+      font-size: 0.98rem;
+      white-space: pre-line;
+      margin-bottom: 0.95rem;
+      word-break: break-word;
+    }
+
+    .post-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.95rem;
+    }
+
+    .tag-chip {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 0.2rem 0.55rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .post-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .post-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 9px;
+      border: 1px solid transparent;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .action-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--border);
+    }
+
+    .action-btn.liked {
+      color: #f43f5e;
+      background: rgba(244, 63, 94, 0.14);
+      border-color: rgba(244, 63, 94, 0.3);
+    }
+
+    /* Comments Section inside Post */
+    .comments-box {
+      margin-top: 0.9rem;
+      padding-top: 0.8rem;
+      border-top: 1px dashed var(--border);
+    }
+
+    .comment-item {
+      font-size: 0.84rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      margin-bottom: 0.45rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .comment-form {
+      display: flex;
+      gap: 0.45rem;
+      margin-top: 0.5rem;
+    }
+
+    .comment-form input {
+      padding: 0.45rem 0.7rem;
+      font-size: 0.82rem;
+      border-radius: 9px;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(2, 6, 23, 0.72);
+      backdrop-filter: blur(6px);
+      display: none;
+      place-items: center;
+      padding: 1.25rem;
+      overflow-y: auto;
+    }
+
+    .modal-backdrop.open {
+      display: grid;
+    }
+
+    .modal {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      width: 100%;
+      max-width: 520px;
+      padding: 1.75rem;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+      animation: modalPop 0.2s ease;
+    }
+
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .modal-header h3 {
+      font-size: 1.3rem;
+      font-weight: 800;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.84rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      color: var(--text-secondary);
+    }
+
+    .avatar-picker {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 0.45rem;
+    }
+
+    .avatar-option {
+      height: 42px;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--bg-secondary);
+      font-size: 1.35rem;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .avatar-option.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: 0 0 0 2px var(--accent);
+      transform: scale(1.06);
+    }
+
+    .banner-picker {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    .banner-option {
+      height: 44px;
+      border-radius: 10px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+
+    .banner-option.selected {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px var(--accent);
+      transform: scale(1.03);
+    }
+
+    .error-msg {
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      padding: 0.6rem 0.85rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 150;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--accent);
+      padding: 0.8rem 1.2rem;
+      border-radius: 14px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: var(--shadow);
+      transform: translateY(120%);
+      opacity: 0;
+      transition: all 0.25s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body data-mode="dark" data-bg-style="mesh">
+
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="navbar-inner">
+      <div class="brand" id="brandHomeBtn" title="Go to my space">
+        <div class="brand-logo">✦</div>
+        <span>NovaSpace</span>
+      </div>
+
+      <div class="nav-actions" id="navActions">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="container">
+    <!-- Hero Call-to-Action for Creating Your Own Space -->
+    <section class="hero-cta" id="heroCta">
+      <div class="hero-cta-text">
+        <h1 id="heroTitle">Claim Your Personal Corner of the Web ✨</h1>
+        <p id="heroSubtitle">Create your own customizable social space with a personal bio, custom color themes, layout styles, and mood-tagged posts — or explore existing spaces below.</p>
+      </div>
+      <div class="hero-cta-buttons" id="heroButtons">
+        <button class="btn btn-primary" onclick="openAuthModal('register')">🚀 Create Your Space</button>
+        <button class="btn btn-secondary" onclick="openAuthModal('login')">Sign In</button>
+      </div>
+    </section>
+
+    <!-- Spaces Explorer Bar -->
+    <div class="spaces-bar" id="spacesBar">
+      <!-- Populated dynamically -->
+    </div>
+
+    <!-- Active Space Profile Header -->
+    <section class="profile-header-card" id="profileHeaderCard">
+      <!-- Populated dynamically -->
+    </section>
+
+    <!-- 2-Column Space Content -->
+    <div class="space-grid">
+      <!-- Left Sidebar: About, Theme Studio, Account Directory -->
+      <aside id="leftSidebar">
+        <!-- Populated dynamically -->
+      </aside>
+
+      <!-- Right Column: Post Composer + Space Feed -->
+      <section id="mainFeedColumn">
+        <!-- Populated dynamically -->
+      </section>
+    </div>
+  </main>
+
+  <!-- Auth Modal (Register / Login) -->
+  <div class="modal-backdrop" id="authModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="authModalTitle">Create Your Personal Space</h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeAuthModal()">✕</button>
+      </div>
+
+      <div class="segmented-control" style="margin-bottom: 1.2rem;">
+        <button class="segment-btn active" id="tabRegisterBtn" onclick="switchAuthTab('register')">Register New Account</button>
+        <button class="segment-btn" id="tabLoginBtn" onclick="switchAuthTab('login')">Log In</button>
+      </div>
+
+      <div class="error-msg" id="authErrorBox"></div>
+
+      <!-- Registration Form -->
+      <form id="registerForm" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label for="regUsername">Username (your space handle)</label>
+          <input type="text" id="regUsername" placeholder="e.g. alex_builds" required minlength="2" maxlength="24" />
+        </div>
+        <div class="form-group">
+          <label for="regDisplayName">Display Name</label>
+          <input type="text" id="regDisplayName" placeholder="e.g. Alex Rivera" required maxlength="40" />
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Password</label>
+          <input type="password" id="regPassword" placeholder="Choose a password" required minlength="3" />
+        </div>
+        <div class="form-group">
+          <label for="regBio">Bio / Tagline</label>
+          <textarea id="regBio" rows="2" placeholder="Tell visitors what your space is all about..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Choose Your Avatar</label>
+          <div class="avatar-picker" id="regAvatarPicker"></div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">✨ Launch My Space</button>
+      </form>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="handleLogin(event)" style="display: none;">
+        <div class="form-group">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" placeholder="Enter your username" required />
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Sign In to Space</button>
+        <div style="margin-top: 1rem; font-size: 0.82rem; color: var(--text-secondary); text-align: center;">
+          Demo accounts you can also switch into anytime: <strong>@maya</strong>, <strong>@kai</strong>, <strong>@elena</strong> (password: <code>demo123</code>)
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div class="modal-backdrop" id="editProfileModalBackdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Edit Profile & Space Details</h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeEditProfileModal()">✕</button>
+      </div>
+      <form id="editProfileForm" onsubmit="handleSaveProfile(event)">
+        <div class="form-group">
+          <label for="editDisplayName">Display Name</label>
+          <input type="text" id="editDisplayName" required maxlength="40" />
+        </div>
+        <div class="form-group">
+          <label for="editStatus">Current Status / Vibe</label>
+          <input type="text" id="editStatus" placeholder="e.g. ☕ Coding a new project" maxlength="50" />
+        </div>
+        <div class="form-group">
+          <label for="editBio">About / Bio</label>
+          <textarea id="editBio" rows="3" maxlength="280"></textarea>
+        </div>
+        <div class="form-group">
+          <label for="editLocation">Location</label>
+          <input type="text" id="editLocation" placeholder="e.g. Seattle, WA" maxlength="40" />
+        </div>
+        <div class="form-group">
+          <label for="editWebsite">Website / Link</label>
+          <input type="text" id="editWebsite" placeholder="e.g. github.com/alex" maxlength="60" />
+        </div>
+        <div class="form-group">
+          <label>Avatar Icon</label>
+          <div class="avatar-picker" id="editAvatarPicker"></div>
+        </div>
+        <div class="form-group">
+          <label>Banner Artwork</label>
+          <div class="banner-picker" id="editBannerPicker"></div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeEditProfileModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toastBox">Saved!</div>
+
+  <script>
+    const STORAGE_KEY = 'novaspace_state_v1';
+
+    const AVATAR_CHOICES = ['🚀', '🦊', '🎨', '⚡', '🌙', '🎧', '🌿', '🤖', '🔥', '💎', '🌊', '🪐', '🐱', '🦄', '🍜', '🎮'];
+
+    const BANNER_PRESETS = [
+      { id: 'aurora', name: 'Aurora', css: 'linear-gradient(135deg, #4f46e5 0%, #ec4899 50%, #f59e0b 100%)' },
+      { id: 'cyber', name: 'Cyberpunk', css: 'linear-gradient(135deg, #0f172a 0%, #3b0764 45%, #06b6d4 100%)' },
+      { id: 'sunset', name: 'Sunset', css: 'linear-gradient(135deg, #f43f5e 0%, #fb923c 55%, #facc15 100%)' },
+      { id: 'forest', name: 'Emerald', css: 'linear-gradient(135deg, #064e3b 0%, #10b981 55%, #34d399 100%)' },
+      { id: 'ocean', name: 'Deep Ocean', css: 'linear-gradient(135deg, #1e3a8a 0%, #0284c7 50%, #38bdf8 100%)' },
+      { id: 'mono', name: 'Minimal Slate', css: 'linear-gradient(135deg, #1e293b 0%, #475569 50%, #94a3b8 100%)' }
+    ];
+
+    const THEME_PALETTES = {
+      indigo: { name: 'Nebula', accent: '#6366f1', accent2: '#ec4899', soft: 'rgba(99, 102, 241, 0.16)' },
+      emerald: { name: 'Emerald', accent: '#10b981', accent2: '#06b6d4', soft: 'rgba(16, 185, 129, 0.16)' },
+      sunset: { name: 'Solar', accent: '#f97316', accent2: '#ec4899', soft: 'rgba(249, 115, 22, 0.16)' },
+      rose: { name: 'Crimson', accent: '#f43f5e', accent2: '#a855f7', soft: 'rgba(244, 63, 94, 0.16)' },
+      ocean: { name: 'Cyan', accent: '#0ea5e9', accent2: '#6366f1', soft: 'rgba(14, 165, 233, 0.16)' },
+      gold: { name: 'Amber', accent: '#eab308', accent2: '#f97316', soft: 'rgba(234, 179, 8, 0.16)' }
+    };
+
+    let selectedRegAvatar = AVATAR_CHOICES[0];
+    let selectedEditAvatar = AVATAR_CHOICES[0];
+    let selectedEditBanner = BANNER_PRESETS[0].id;
+    let activeTagFilter = null;
+
+    function createInitialState() {
+      const now = Date.now();
+      return {
+        currentUserId: null,
+        viewingUserId: 'u_maya',
+        users: [
+          {
+            id: 'u_maya',
+            username: 'maya',
+            displayName: 'Maya Lin',
+            password: 'demo123',
+            avatar: '🎨',
+            status: '✨ Designing interactive web toys',
+            bio: 'Creative technologist & UI tinkerer. Building cozy digital gardens, generative art experiments, and custom personal spaces.',
+            location: 'San Francisco, CA',
+            website: 'mayalin.design',
+            joinedAt: 'Oct 2026',
+            banner: 'aurora',
+            theme: {
+              palette: 'indigo',
+              mode: 'dark',
+              bgStyle: 'mesh',
+              layout: 'feed'
+            }
+          },
+          {
+            id: 'u_kai',
+            username: 'kai',
+            displayName: 'Kai Nakamura',
+            password: 'demo123',
+            avatar: '🎧',
+            status: '🎵 Producing lo-fi synth beats',
+            bio: 'Synth enthusiast, night-owl coder, and espresso collector. Sharing studio snapshots and late-night audio sketches.',
+            location: 'Tokyo / Remote',
+            website: 'soundcloud.com/kainakamura',
+            joinedAt: 'Nov 2026',
+            banner: 'cyber',
+            theme: {
+              palette: 'ocean',
+              mode: 'dark',
+              bgStyle: 'grid',
+              layout: 'grid'
+            }
+          },
+          {
+            id: 'u_elena',
+            username: 'elena',
+            displayName: 'Elena Rostova',
+            password: 'demo123',
+            avatar: '🌿',
+            status: '📖 Reading sci-fi on the balcony',
+            bio: 'Botanical illustrator & indie game writer. Lover of solarpunk worlds, watercolor journals, and rainy afternoons.',
+            location: 'Lisbon, Portugal',
+            website: 'elenarostova.art',
+            joinedAt: 'Nov 2026',
+            banner: 'forest',
+            theme: {
+              palette: 'emerald',
+              mode: 'light',
+              bgStyle: 'dots',
+              layout: 'feed'
+            }
+          }
+        ],
+        posts: [
+          {
+            id: 'p_101',
+            userId: 'u_maya',
+            content: 'Welcome to NovaSpace! 🎉 Every user gets their own customizable profile space with personal color palettes, dark/light mode, and layout styles. Click "Create Your Space" at the top to register your own account!',
+            mood: '🚀 Excited',
+            tags: ['welcome', 'novaspace', 'webdev'],
+            likes: ['u_kai', 'u_elena'],
+            comments: [
+              { id: 'c_1', authorId: 'u_kai', text: 'Love the custom theme studio on each profile!' }
+            ],
+            createdAt: now - 1000 * 60 * 95
+          },
+          {
+            id: 'p_102',
+            userId: 'u_maya',
+            content: 'Just finished prototyping a new shader gradient generator for personal headers. Which palette do you prefer — Nebula Indigo or Solar Sunset?',
+            mood: '🎨 Creative',
+            tags: ['design', 'ui', 'shaders'],
+            likes: ['u_elena'],
+            comments: [],
+            createdAt: now - 1000 * 60 * 35
+          },
+          {
+            id: 'p_201',
+            userId: 'u_kai',
+            content: 'Recorded a 4-track ambient tape loop on the Roland Juno tonight. Switching my space layout to Grid view so my track notes read like liner cards.',
+            mood: '🎵 Vibing',
+            tags: ['synth', 'lofi', 'music'],
+            likes: ['u_maya'],
+            comments: [
+              { id: 'c_2', authorId: 'u_maya', text: 'Grid layout looks awesome with the Cyan grid theme.' }
+            ],
+            createdAt: now - 1000 * 60 * 140
+          },
+          {
+            id: 'p_301',
+            userId: 'u_elena',
+            content: 'Sketched three new greenhouse concepts for our upcoming indie adventure game. Keeping my space in Light Mode with Emerald accents to match the botanical theme 🌱.',
+            mood: '🌿 Peaceful',
+            tags: ['solarpunk', 'indiedev', 'sketchbook'],
+            likes: ['u_maya', 'u_kai'],
+            comments: [],
+            createdAt: now - 1000 * 60 * 220
+          }
+        ]
+      };
+    }
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          const initial = createInitialState();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+          return initial;
+        }
+        const parsed = JSON.parse(raw);
+        if (!parsed.users || !parsed.users.length) {
+          return createInitialState();
+        }
+        return parsed;
+      } catch (e) {
+        return createInitialState();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function getUserById(id) {
+      return state.users.find(u => u.id === id) || null;
+    }
+
+    function getCurrentUser() {
+      return getUserById(state.currentUserId);
+    }
+
+    function getViewingUser() {
+      return getUserById(state.viewingUserId) || state.users[0];
+    }
+
+    function applySpaceTheme(user) {
+      const theme = user.theme || { palette: 'indigo', mode: 'dark', bgStyle: 'mesh', layout: 'feed' };
+      const palette = THEME_PALETTES[theme.palette] || THEME_PALETTES.indigo;
+
+      document.body.setAttribute('data-mode', theme.mode || 'dark');
+      document.body.setAttribute('data-bg-style', theme.bgStyle || 'mesh');
+      document.documentElement.style.setProperty('--accent', palette.accent);
+      document.documentElement.style.setProperty('--accent-2', palette.accent2);
+      document.documentElement.style.setProperty('--accent-soft', palette.soft);
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toastBox');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2600);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatRelativeTime(timestamp) {
+      const diffSec = Math.max(1, Math.floor((Date.now() - timestamp) / 1000));
+      if (diffSec < 60) return 'Just now';
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `${diffMin}m ago`;
+      const diffHr = Math.floor(diffMin / 60);
+      if (diffHr < 24) return `${diffHr}h ago`;
+      const diffDay = Math.floor(diffHr / 24);
+      return `${diffDay}d ago`;
+    }
+
+    /* Render Everything */
+    function renderApp() {
+      const currentUser = getCurrentUser();
+      const viewingUser = getViewingUser();
+      const isOwnSpace = Boolean(currentUser && currentUser.id === viewingUser.id);
+
+      applySpaceTheme(viewingUser);
+      renderNavbar(currentUser, viewingUser);
+      renderHeroCta(currentUser, viewingUser, isOwnSpace);
+      renderSpacesBar(currentUser, viewingUser);
+      renderProfileHeader(currentUser, viewingUser, isOwnSpace);
+      renderLeftSidebar(currentUser, viewingUser, isOwnSpace);
+      renderMainFeed(currentUser, viewingUser, isOwnSpace);
+    }
+
+    function renderNavbar(currentUser, viewingUser) {
+      const nav = document.getElementById('navActions');
+      const accountOptions = [
+        `<option value="" ${!currentUser ? 'selected' : ''}>👤 Guest (Not signed in)</option>`,
+        ...state.users.map(u =>
+          `<option value="${u.id}" ${currentUser && currentUser.id === u.id ? 'selected' : ''}>${u.avatar} ${escapeHtml(u.displayName)} (@${escapeHtml(u.username)})</option>`
+        )
+      ].join('');
+
+      nav.innerHTML = `
+        <div class="account-switcher" title="Instant account switcher">
+          <span>Account:</span>
+          <select onchange="handleQuickAccountSwitch(this.value)" aria-label="Switch active account">
+            ${accountOptions}
+          </select>
+        </div>
+        ${currentUser ? `
+          <button class="btn btn-secondary btn-sm" onclick="visitSpace('${currentUser.id}')">
+            ${currentUser.avatar} My Space
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">
+            + New Account
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="handleLogout()">
+            Log Out
+          </button>
+        ` : `
+          <button class="btn btn-secondary btn-sm" onclick="openAuthModal('login')">Sign In</button>
+          <button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">🚀 Register Account</button>
+        `}
+      `;
+    }
+
+    function renderHeroCta(currentUser, viewingUser, isOwnSpace) {
+      const hero = document.getElementById('heroCta');
+      if (!currentUser) {
+        hero.style.display = 'flex';
+        document.getElementById('heroTitle').textContent = 'Claim Your Personal Corner of the Web ✨';
+        document.getElementById('heroSubtitle').textContent =
+          `You're currently browsing @${viewingUser.username}'s space in Guest mode. Register your own account in seconds to get a personal profile, customize your theme, and publish posts!`;
+        document.getElementById('heroButtons').innerHTML = `
+          <button class="btn btn-primary" onclick="openAuthModal('register')">🚀 Register New Account</button>
+          <button class="btn btn-secondary" onclick="openAuthModal('login')">Sign In</button>
+        `;
+      } else if (!isOwnSpace) {
+        hero.style.display = 'flex';
+        document.getElementById('heroTitle').textContent = `Visiting ${viewingUser.displayName}'s Space`;
+        document.getElementById('heroSubtitle').textContent =
+          `Notice how the page automatically adapts to @${viewingUser.username}'s chosen color palette, background pattern, and layout!`;
+        document.getElementById('heroButtons').innerHTML = `
+          <button class="btn btn-primary" onclick="visitSpace('${currentUser.id}')">🏠 Back to My Space (@${escapeHtml(currentUser.username)})</button>
+        `;
+      } else {
+        hero.style.display = 'none';
+      }
+    }
+
+    function renderSpacesBar(currentUser, viewingUser) {
+      const bar = document.getElementById('spacesBar');
+      const pills = state.users.map(u => {
+        const isCurrent = currentUser && currentUser.id === u.id;
+        const isViewing = viewingUser.id === u.id;
+        return `
+          <div class="space-pill ${isViewing ? 'active' : ''}" onclick="visitSpace('${u.id}')">
+            <div class="space-pill-avatar">${u.avatar}</div>
+            <div class="space-pill-info">
+              <span class="space-pill-name">
+                ${escapeHtml(u.displayName)}
+                ${isCurrent ? '<span class="badge-you">YOU</span>' : ''}
+              </span>
+              <span class="space-pill-handle">@${escapeHtml(u.username)}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      bar.innerHTML = `
+        <span class="spaces-label">Explore Spaces (${state.users.length}):</span>
+        ${pills}
+        <button class="btn btn-secondary btn-sm" style="border-radius: 999px;" onclick="openAuthModal('register')">+ Register Space</button>
+      `;
+    }
+
+    function renderProfileHeader(currentUser, viewingUser, isOwnSpace) {
+      const card = document.getElementById('profileHeaderCard');
+      const bannerPreset = BANNER_PRESETS.find(b => b.id === viewingUser.banner) || BANNER_PRESETS[0];
+      const userPosts = state.posts.filter(p => p.userId === viewingUser.id);
+      const totalLikesReceived = userPosts.reduce((sum, p) => sum + p.likes.length, 0);
+      const paletteObj = THEME_PALETTES[viewingUser.theme?.palette] || THEME_PALETTES.indigo;
+
+      card.innerHTML = `
+        <div class="profile-banner" style="background: ${bannerPreset.css};">
+          <div class="profile-banner-actions">
+            ${isOwnSpace ? `
+              <button class="btn btn-secondary btn-sm" onclick="openEditProfileModal()">✏️ Customize Profile & Banner</button>
+            ` : `
+              <span class="status-pill" style="background: rgba(15, 23, 42, 0.72); color: #fff; border: none;">
+                🎨 Theme: ${paletteObj.name} · ${viewingUser.theme?.mode === 'light' ? 'Light' : 'Dark'}
+              </span>
+            `}
+          </div>
+        </div>
+        <div class="profile-header-body">
+          <div class="profile-top-row">
+            <div class="profile-avatar-wrap">
+              <div class="profile-avatar">${viewingUser.avatar}</div>
+              ${viewingUser.status ? `<div class="status-pill">${escapeHtml(viewingUser.status)}</div>` : ''}
+            </div>
+            <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
+              ${isOwnSpace ? `
+                <button class="btn btn-primary btn-sm" onclick="openEditProfileModal()">⚙️ Edit Space Profile</button>
+              ` : `
+                <button class="btn btn-secondary btn-sm" onclick="handleSwitchToUser('${viewingUser.id}')">🔑 Log in as @${escapeHtml(viewingUser.username)}</button>
+              `}
+            </div>
+          </div>
+
+          <div class="profile-identity">
+            <h2>
+              ${escapeHtml(viewingUser.displayName)}
+              ${isOwnSpace ? '<span class="badge-you" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;">YOUR SPACE</span>' : ''}
+            </h2>
+            <div class="profile-handle">@${escapeHtml(viewingUser.username)}</div>
+          </div>
+
+          <p class="profile-bio">${escapeHtml(viewingUser.bio || 'No bio added yet.')}</p>
+
+          <div class="profile-meta-row">
+            ${viewingUser.location ? `<span class="profile-meta-item">📍 ${escapeHtml(viewingUser.location)}</span>` : ''}
+            ${viewingUser.website ? `<span class="profile-meta-item">🔗 <strong>${escapeHtml(viewingUser.website)}</strong></span>` : ''}
+            <span class="profile-meta-item">📅 Joined ${escapeHtml(viewingUser.joinedAt || 'Nov 2026')}</span>
+          </div>
+
+          <div class="profile-stats">
+            <div class="stat-item">
+              <span class="stat-value">${userPosts.length}</span>
+              <span class="stat-label">Posts in Space</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${totalLikesReceived}</span>
+              <span class="stat-label">Total Likes</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${paletteObj.name}</span>
+              <span class="stat-label">Space Theme</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLeftSidebar(currentUser, viewingUser, isOwnSpace) {
+      const sidebar = document.getElementById('leftSidebar');
+      const theme = viewingUser.theme || { palette: 'indigo', mode: 'dark', bgStyle: 'mesh', layout: 'feed' };
+
+      const paletteButtons = Object.entries(THEME_PALETTES).map(([key, p]) => `
+        <button class="palette-btn ${theme.palette === key ? 'active' : ''}" onclick="updateSpaceTheme('palette', '${key}')">
+          <span class="swatch-dot" style="background: linear-gradient(135deg, ${p.accent}, ${p.accent2});"></span>
+          <span>${p.name}</span>
+        </button>
+      `).join('');
+
+      sidebar.innerHTML = `
+        <!-- Theme Customizer Card -->
+        <div class="card">
+          <div class="card-title">
+            <span>🎨 ${isOwnSpace ? 'Your Space Theme Studio' : `@${escapeHtml(viewingUser.username)}'s Space Theme`}</span>
+            <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 500;">
+              ${isOwnSpace ? 'Auto-saved' : 'Live Preview'}
+            </span>
+          </div>
+
+          <div class="customizer-group">
+            <span class="customizer-label">Color Palette</span>
+            <div class="palette-grid">
+              ${paletteButtons}
+            </div>
+          </div>
+
+          <div class="customizer-group">
+            <span class="customizer-label">Appearance Mode</span>
+            <div class="segmented-control">
+              <button class="segment-btn ${theme.mode === 'dark' ? 'active' : ''}" onclick="updateSpaceTheme('mode', 'dark')">🌙 Dark</button>
+              <button class="segment-btn ${theme.mode === 'light' ? 'active' : ''}" onclick="updateSpaceTheme('mode', 'light')">☀️ Light</button>
+            </div>
+          </div>
+
+          <div class="customizer-group">
+            <span class="customizer-label">Background Canvas</span>
+            <div class="segmented-control">
+              <button class="segment-btn ${theme.bgStyle === 'mesh' ? 'active' : ''}" onclick="updateSpaceTheme('bgStyle', 'mesh')">Aura</button>
+              <button class="segment-btn ${theme.bgStyle === 'grid' ? 'active' : ''}" onclick="updateSpaceTheme('bgStyle', 'grid')">Grid</button>
+              <button class="segment-btn ${theme.bgStyle === 'dots' ? 'active' : ''}" onclick="updateSpaceTheme('bgStyle', 'dots')">Dots</button>
+              <button class="segment-btn ${theme.bgStyle === 'minimal' ? 'active' : ''}" onclick="updateSpaceTheme('bgStyle', 'minimal')">Clean</button>
+            </div>
+          </div>
+
+          <div class="customizer-group">
+            <span class="customizer-label">Post Feed Layout</span>
+            <div class="segmented-control">
+              <button class="segment-btn ${theme.layout === 'feed' ? 'active' : ''}" onclick="updateSpaceTheme('layout', 'feed')">Stream</button>
+              <button class="segment-btn ${theme.layout === 'grid' ? 'active' : ''}" onclick="updateSpaceTheme('layout', 'grid')">Cards Grid</button>
+              <button class="segment-btn ${theme.layout === 'compact' ? 'active' : ''}" onclick="updateSpaceTheme('layout', 'compact')">Compact</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Community Directory Card -->
+        <div class="card">
+          <div class="card-title">
+            <span>🌐 Community Spaces</span>
+            <button class="btn btn-ghost btn-sm" onclick="openAuthModal('register')">+ New</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.65rem;">
+            ${state.users.map(u => {
+              const postCount = state.posts.filter(p => p.userId === u.id).length;
+              const isViewing = u.id === viewingUser.id;
+              return `
+                <div onclick="visitSpace('${u.id}')" style="display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.75rem; border-radius: 12px; cursor: pointer; background: ${isViewing ? 'var(--accent-soft)' : 'var(--bg-secondary)'}; border: 1px solid ${isViewing ? 'var(--accent)' : 'var(--border)'};">
+                  <div style="display: flex; align-items: center; gap: 0.65rem;">
+                    <span style="font-size: 1.4rem;">${u.avatar}</span>
+                    <div>
+                      <div style="font-size: 0.88rem; font-weight: 700;">${escapeHtml(u.displayName)}</div>
+                      <div style="font-size: 0.75rem; color: var(--text-secondary);">@${escapeHtml(u.username)} · ${postCount} posts</div>
+                    </div>
+                  </div>
+                  <span style="font-size: 0.78rem; color: var(--accent); font-weight: 700;">Visit →</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMainFeed(currentUser, viewingUser, isOwnSpace) {
+      const col = document.getElementById('mainFeedColumn');
+      const userPosts = state.posts
+        .filter(p => p.userId === viewingUser.id)
+        .filter(p => !activeTagFilter || (p.tags && p.tags.includes(activeTagFilter)))
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      const allTags = Array.from(
+        new Set(
+          state.posts
+            .filter(p => p.userId === viewingUser.id)
+            .flatMap(p => p.tags || [])
+        )
+      );
+
+      const layoutClass =
+        viewingUser.theme?.layout === 'grid'
+          ? 'layout-grid'
+          : viewingUser.theme?.layout === 'compact'
+          ? 'layout-compact'
+          : '';
+
+      const composerHtml = isOwnSpace
+        ? `
+          <div class="card composer-card">
+            <div class="card-title">
+              <span>✍️ Publish to Your Space (@${escapeHtml(currentUser.username)})</span>
+            </div>
+            <form onsubmit="handleCreatePost(event)">
+              <div class="composer-top">
+                <div class="composer-avatar">${currentUser.avatar}</div>
+                <div class="composer-inputs">
+                  <textarea id="postContentInput" placeholder="What's happening in your world, ${escapeHtml(currentUser.displayName)}?" required></textarea>
+                </div>
+              </div>
+              <div class="composer-toolbar">
+                <div class="composer-options">
+                  <select id="postMoodInput" class="mood-select" aria-label="Select post mood">
+                    <option value="✨ Inspired">✨ Inspired</option>
+                    <option value="🚀 Building">🚀 Building</option>
+                    <option value="🎨 Creative">🎨 Creative</option>
+                    <option value="🎵 Vibing">🎵 Vibing</option>
+                    <option value="☕ Chilling">☕ Chilling</option>
+                    <option value="💡 Thought">💡 Thought</option>
+                    <option value="🎉 Celebrating">🎉 Celebrating</option>
+                  </select>
+                  <input type="text" id="postTagsInput" class="tag-input-small" placeholder="Tags (comma-separated)" />
+                </div>
+                <button type="submit" class="btn btn-primary">Publish Post</button>
+              </div>
+            </form>
+          </div>
+        `
+        : `
+          <div class="card" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.96rem;">Viewing @${escapeHtml(viewingUser.username)}'s personal feed</div>
+              <div style="font-size: 0.84rem; color: var(--text-secondary);">
+                ${currentUser
+                  ? `You can like and comment on @${escapeHtml(viewingUser.username)}'s posts, or switch to your own space to publish new posts.`
+                  : `Sign in or create your own account to publish posts, like updates, and customize your space.`}
+              </div>
+            </div>
+            ${currentUser
+              ? `<button class="btn btn-primary btn-sm" onclick="visitSpace('${currentUser.id}')">✍️ Post on My Space</button>`
+              : `<button class="btn btn-primary btn-sm" onclick="openAuthModal('register')">🚀 Create Account to Post</button>`}
+          </div>
+        `;
+
+      const tagPillsHtml = allTags.length
+        ? `
+          <div class="feed-filter-pills">
+            <button class="filter-pill ${!activeTagFilter ? 'active' : ''}" onclick="setTagFilter(null)">All Posts</button>
+            ${allTags.map(t => `
+              <button class="filter-pill ${activeTagFilter === t ? 'active' : ''}" onclick="setTagFilter('${escapeHtml(t)}')">#${escapeHtml(t)}</button>
+            `).join('')}
+          </div>
+        `
+        : '';
+
+      const postsHtml = userPosts.length
+        ? userPosts.map(post => {
+            const isLiked = currentUser && post.likes.includes(currentUser.id);
+            const canDelete = currentUser && currentUser.id === post.userId;
+            return `
+              <article class="post-card">
+                <div>
+                  <div class="post-header">
+                    <div class="post-author">
+                      <div class="post-avatar">${viewingUser.avatar}</div>
+                      <div class="post-author-meta">
+                        <h4>${escapeHtml(viewingUser.displayName)} <span style="font-weight: 500; color: var(--text-secondary); font-size: 0.82rem;">@${escapeHtml(viewingUser.username)}</span></h4>
+                        <span class="post-time">${formatRelativeTime(post.createdAt)}</span>
+                      </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.45rem;">
+                      ${post.mood ? `<span class="post-mood">${escapeHtml(post.mood)}</span>` : ''}
+                      ${canDelete ? `<button class="btn btn-danger btn-sm" onclick="handleDeletePost('${post.id}')" title="Delete post">🗑️</button>` : ''}
+                    </div>
+                  </div>
+
+                  <div class="post-content">${escapeHtml(post.content)}</div>
+
+                  ${post.tags && post.tags.length ? `
+                    <div class="post-tags">
+                      ${post.tags.map(tag => `<span class="tag-chip" onclick="setTagFilter('${escapeHtml(tag)}')">#${escapeHtml(tag)}</span>`).join('')}
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div>
+                  <div class="post-footer">
+                    <div class="post-actions">
+                      <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="handleToggleLike('${post.id}')">
+                        <span>${isLiked ? '❤️' : '🤍'}</span>
+                        <span>${post.likes.length} ${post.likes.length === 1 ? 'Like' : 'Likes'}</span>
+                      </button>
+                      <span style="font-size: 0.8rem; color: var(--text-secondary); padding-left: 0.35rem;">
+                        💬 ${(post.comments || []).length} ${(post.comments || []).length === 1 ? 'Comment' : 'Comments'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Comments Box -->
+                  <div class="comments-box">
+                    ${(post.comments || []).map(c => {
+                      const cAuthor = getUserById(c.authorId);
+                      const authorLabel = cAuthor ? `${cAuthor.avatar} ${escapeHtml(cAuthor.displayName)}` : '👤 Visitor';
+                      return `
+                        <div class="comment-item">
+                          <div><strong>${authorLabel}:</strong> ${escapeHtml(c.text)}</div>
+                        </div>
+                      `;
+                    }).join('')}
+                    <form class="comment-form" onsubmit="handleAddComment(event, '${post.id}')">
+                      <input type="text" id="commentInput_${post.id}" placeholder="${currentUser ? `Reply as @${escapeHtml(currentUser.username)}...` : 'Sign in or reply as guest...'}" required maxlength="160" />
+                      <button type="submit" class="btn btn-secondary btn-sm">Reply</button>
+                    </form>
+                  </div>
+                </div>
+              </article>
+            `;
+          }).join('')
+        : `
+          <div class="card empty-state">
+            <div style="font-size: 2.4rem; margin-bottom: 0.5rem;">📭</div>
+            <h4 style="color: var(--text-primary); margin-bottom: 0.3rem;">No posts here yet</h4>
+            <p>${isOwnSpace ? 'Share your first thought, project update, or status using the composer above!' : `@${escapeHtml(viewingUser.username)} hasn't posted under this filter yet.`}</p>
+          </div>
+        `;
+
+      col.innerHTML = `
+        ${composerHtml}
+        <div class="feed-header">
+          <h3 style="font-size: 1.15rem; font-weight: 800;">
+            📌 ${escapeHtml(viewingUser.displayName)}'s Space Feed
+          </h3>
+          ${tagPillsHtml}
+        </div>
+        <div class="posts-container ${layoutClass}">
+          ${postsHtml}
+        </div>
+      `;
+    }
+
+    /* Interactive Actions */
+    function visitSpace(userId) {
+      activeTagFilter = null;
+      state.viewingUserId = userId;
+      saveState();
+      renderApp();
+    }
+
+    function setTagFilter(tag) {
+      activeTagFilter = activeTagFilter === tag ? null : tag;
+      renderApp();
+    }
+
+    function updateSpaceTheme(key, value) {
+      const viewingUser = getViewingUser();
+      if (!viewingUser.theme) {
+        viewingUser.theme = { palette: 'indigo', mode: 'dark', bgStyle: 'mesh', layout: 'feed' };
+      }
+      viewingUser.theme[key] = value;
+      saveState();
+      renderApp();
+      showToast(`Updated space ${key} to "${value}"`);
+    }
+
+    function handleCreatePost(event) {
+      event.preventDefault();
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        openAuthModal('register');
+        return;
+      }
+
+      const contentEl = document.getElementById('postContentInput');
+      const moodEl = document.getElementById('postMoodInput');
+      const tagsEl = document.getElementById('postTagsInput');
+
+      const content = contentEl.value.trim();
+      if (!content) return;
+
+      const tags = tagsEl.value
+        .split(',')
+        .map(t => t.trim().replace(/^#/, '').toLowerCase())
+        .filter(Boolean);
+
+      const newPost = {
+        id: 'p_' + Date.now(),
+        userId: currentUser.id,
+        content,
+        mood: moodEl.value,
+        tags,
+        likes: [],
+        comments: [],
+        createdAt: Date.now()
+      };
+
+      state.posts.unshift(newPost);
+      activeTagFilter = null;
+      saveState();
+      renderApp();
+      showToast('✨ Published new post to your space!');
+    }
+
+    function handleDeletePost(postId) {
+      const currentUser = getCurrentUser();
+      const post = state.posts.find(p => p.id === postId);
+      if (!post || !currentUser || post.userId !== currentUser.id) return;
+
+      state.posts = state.posts.filter(p => p.id !== postId);
+      saveState();
+      renderApp();
+      showToast('Post deleted');
+    }
+
+    function handleToggleLike(postId) {
+      let currentUser = getCurrentUser();
+      if (!currentUser) {
+        openAuthModal('register');
+        showToast('Create or sign in to an account to like posts!');
+        return;
+      }
+
+      const post = state.posts.find(p => p.id === postId);
+      if (!post) return;
+
+      const idx = post.likes.indexOf(currentUser.id);
+      if (idx === -1) {
+        post.likes.push(currentUser.id);
+      } else {
+        post.likes.splice(idx, 1);
+      }
+      saveState();
+      renderApp();
+    }
+
+    function handleAddComment(event, postId) {
+      event.preventDefault();
+      const input = document.getElementById(`commentInput_${postId}`);
+      if (!input) return;
+      const text = input.value.trim();
+      if (!text) return;
+
+      const currentUser = getCurrentUser();
+      const post = state.posts.find(p => p.id === postId);
+      if (!post) return;
+
+      if (!post.comments) post.comments = [];
+      post.comments.push({
+        id: 'c_' + Date.now(),
+        authorId: currentUser ? currentUser.id : null,
+        text
+      });
+
+      saveState();
+      renderApp();
+      showToast('Reply posted!');
+    }
+
+    /* Account Registration, Login & Switching */
+    function renderAvatarPickers() {
+      const regPicker = document.getElementById('regAvatarPicker');
+      if (regPicker) {
+        regPicker.innerHTML = AVATAR_CHOICES.map(icon => `
+          <div class="avatar-option ${selectedRegAvatar === icon ? 'selected' : ''}" onclick="selectRegAvatar('${icon}')">${icon}</div>
+        `).join('');
+      }
+
+      const editPicker = document.getElementById('editAvatarPicker');
+      if (editPicker) {
+        editPicker.innerHTML = AVATAR_CHOICES.map(icon => `
+          <div class="avatar-option ${selectedEditAvatar === icon ? 'selected' : ''}" onclick="selectEditAvatar('${icon}')">${icon}</div>
+        `).join('');
+      }
+
+      const bannerPicker = document.getElementById('editBannerPicker');
+      if (bannerPicker) {
+        bannerPicker.innerHTML = BANNER_PRESETS.map(b => `
+          <div class="banner-option ${selectedEditBanner === b.id ? 'selected' : ''}"
+               style="background: ${b.css};"
+               title="${b.name}"
+               onclick="selectEditBanner('${b.id}')"></div>
+        `).join('');
+      }
+    }
+
+    function selectRegAvatar(icon) {
+      selectedRegAvatar = icon;
+      renderAvatarPickers();
+    }
+
+    function selectEditAvatar(icon) {
+      selectedEditAvatar = icon;
+      renderAvatarPickers();
+    }
+
+    function selectEditBanner(bannerId) {
+      selectedEditBanner = bannerId;
+      renderAvatarPickers();
+    }
+
+    function openAuthModal(mode = 'register') {
+      document.getElementById('authErrorBox').style.display = 'none';
+      switchAuthTab(mode);
+      renderAvatarPickers();
+      document.getElementById('authModalBackdrop').classList.add('open');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModalBackdrop').classList.remove('open');
+    }
+
+    function switchAuthTab(mode) {
+      const isReg = mode === 'register';
+      document.getElementById('authModalTitle').textContent = isReg ? 'Create Your Personal Space' : 'Sign In to Your Space';
+      document.getElementById('tabRegisterBtn').classList.toggle('active', isReg);
+      document.getElementById('tabLoginBtn').classList.toggle('active', !isReg);
+      document.getElementById('registerForm').style.display = isReg ? 'block' : 'none';
+      document.getElementById('loginForm').style.display = isReg ? 'none' : 'block';
+      document.getElementById('authErrorBox').style.display = 'none';
+    }
+
+    function showAuthError(msg) {
+      const box = document.getElementById('authErrorBox');
+      box.textContent = msg;
+      box.style.display = 'block';
+    }
+
+    function handleRegister(event) {
+      event.preventDefault();
+      const rawUsername = document.getElementById('regUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const displayName = document.getElementById('regDisplayName').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const bio = document.getElementById('regBio').value.trim();
+
+      if (!rawUsername || rawUsername.length < 2) {
+        showAuthError('Username must contain at least 2 alphanumeric characters.');
+        return;
+      }
+
+      const exists = state.users.some(u => u.username.toLowerCase() === rawUsername);
+      if (exists) {
+        showAuthError(`Username @${rawUsername} is already taken. Try another handle or log in!`);
+        return;
+      }
+
+      const newUserId = 'u_' + Date.now();
+      const newUser = {
+        id: newUserId,
+        username: rawUsername,
+        displayName: displayName || rawUsername,
+        password,
+        avatar: selectedRegAvatar,
+        status: '🚀 Just launched my personal space!',
+        bio: bio || `Welcome to ${displayName || rawUsername}'s personal corner on NovaSpace!`,
+        location: 'Digital Space',
+        website: `novaspace.app/@${rawUsername}`,
+        joinedAt: 'Just now',
+        banner: 'aurora',
+        theme: {
+          palette: 'indigo',
+          mode: 'dark',
+          bgStyle: 'mesh',
+          layout: 'feed'
+        }
+      };
+
+      state.users.unshift(newUser);
+      state.currentUserId = newUserId;
+      state.viewingUserId = newUserId;
+
+      // Create an automatic welcome post in their space
+      state.posts.unshift({
+        id: 'p_' + Date.now(),
+        userId: newUserId,
+        content: `Hello world! 👋 I just claimed my personal space (@${rawUsername}). Excited to customize my theme and share updates here!`,
+        mood: '🎉 Celebrating',
+        tags: ['hello', 'myfirstpost'],
+        likes: [],
+        comments: [],
+        createdAt: Date.now()
+      });
+
+      saveState();
+      closeAuthModal();
+      document.getElementById('registerForm').reset();
+      renderApp();
+      showToast(`🎉 Welcome, ${newUser.displayName}! Your personal space is live.`);
+    }
+
+    function handleLogin(event) {
+      event.preventDefault();
+      const username = document.getElementById('loginUsername').value.trim().toLowerCase().replace(/^@/, '');
+      const password = document.getElementById('loginPassword').value;
+
+      const user = state.users.find(u => u.username.toLowerCase() === username);
+      if (!user || user.password !== password) {
+        showAuthError('Invalid username or password. (Tip: demo accounts use password "demo123")');
+        return;
+      }
+
+      state.currentUserId = user.id;
+      state.viewingUserId = user.id;
+      saveState();
+      closeAuthModal();
+      document.getElementById('loginForm').reset();
+      renderApp();
+      showToast(`Welcome back, ${user.displayName}!`);
+    }
+
+    function handleLogout() {
+      state.currentUserId = null;
+      saveState();
+      renderApp();
+      showToast('Signed out. Browsing in Guest mode.');
+    }
+
+    function handleQuickAccountSwitch(userId) {
+      if (!userId) {
+        handleLogout();
+        return;
+      }
+      const user = getUserById(userId);
+      if (!user) return;
+      state.currentUserId = user.id;
+      state.viewingUserId = user.id;
+      saveState();
+      renderApp();
+      showToast(`Switched active account to @${user.username}`);
+    }
+
+    function handleSwitchToUser(userId) {
+      handleQuickAccountSwitch(userId);
+    }
+
+    /* Profile Editing */
+    function openEditProfileModal() {
+      const currentUser = getCurrentUser();
+      if (!currentUser) return;
+
+      document.getElementById('editDisplayName').value = currentUser.displayName || '';
+      document.getElementById('editStatus').value = currentUser.status || '';
+      document.getElementById('editBio').value = currentUser.bio || '';
+      document.getElementById('editLocation').value = currentUser.location || '';
+      document.getElementById('editWebsite').value = currentUser.website || '';
+
+      selectedEditAvatar = currentUser.avatar || AVATAR_CHOICES[0];
+      selectedEditBanner = currentUser.banner || BANNER_PRESETS[0].id;
+      renderAvatarPickers();
+
+      document.getElementById('editProfileModalBackdrop').classList.add('open');
+    }
+
+    function closeEditProfileModal() {
+      document.getElementById('editProfileModalBackdrop').classList.remove('open');
+    }
+
+    function handleSaveProfile(event) {
+      event.preventDefault();
+      const currentUser = getCurrentUser();
+      if (!currentUser) return;
+
+      currentUser.displayName = document.getElementById('editDisplayName').value.trim() || currentUser.username;
+      currentUser.status = document.getElementById('editStatus').value.trim();
+      currentUser.bio = document.getElementById('editBio').value.trim();
+      currentUser.location = document.getElementById('editLocation').value.trim();
+      currentUser.website = document.getElementById('editWebsite').value.trim();
+      currentUser.avatar = selectedEditAvatar;
+      currentUser.banner = selectedEditBanner;
+
+      saveState();
+      closeEditProfileModal();
+      renderApp();
+      showToast('✅ Profile and space appearance updated!');
+    }
+
+    document.getElementById('brandHomeBtn').addEventListener('click', () => {
+      const currentUser = getCurrentUser();
+      if (currentUser) {
+        visitSpace(currentUser.id);
+      } else {
+        visitSpace(state.users[0].id);
+      }
+    });
+
+    // Close modals when clicking backdrop
+    window.addEventListener('click', (e) => {
+      if (e.target.id === 'authModalBackdrop') closeAuthModal();
+      if (e.target.id === 'editProfileModalBackdrop') closeEditProfileModal();
+    });
+
+    // Initial render
+    renderApp();
+  </script>
+</body>
+</html>
